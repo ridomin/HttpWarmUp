@@ -4,7 +4,9 @@ c:\code\HttpWarmUp\src\HttpWarmpUp\bin\Debug\HttpWarmpUp.exe
 c:\code\HttpWarmUp\src\HttpWarmpUp\bin\Debug\HttpWarmpUp.pdb
 c:\code\HttpWarmUp\src\HttpWarmpUp\bin\Debug\HttpWarmpUp.exe.CodeAnalysisLog.xml
 c:\code\HttpWarmUp\src\HttpWarmpUp\bin\Debug\HttpWarmpUp.exe.lastcodeanalysissucceeded
-c:\code\HttpWarmUp\src\HttpWarmpUp\bin\Debug\HtmlAgilityPack.dll
 c:\code\HttpWarmUp\src\HttpWarmpUp\obj\Debug\Tools.HttpWarmUp.csprojResolveAssemblyReference.cache
 c:\code\HttpWarmUp\src\HttpWarmpUp\obj\Debug\HttpWarmpUp.exe
 c:\code\HttpWarmUp\src\HttpWarmpUp\obj\Debug\HttpWarmpUp.pdb
+c:\code\HttpWarmUp\src\HttpWarmpUp\bin\Debug\HtmlAgilityPack.PCL.dll
+c:\code\HttpWarmUp\src\HttpWarmpUp\bin\Debug\HtmlAgilityPack.PCL.pdb
+c:\code\HttpWarmUp\src\HttpWarmpUp\bin\Debug\System.Xml.XPath.dll
