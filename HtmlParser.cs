@@ -1,69 +1,116 @@
-using System;
-using System.Collections.Generic;
+﻿using System;
 using HtmlAgilityPack;
+using System.Collections.ObjectModel;
 
 namespace HttpWarmpUp
 {
-    internal class HtmlParser
+    public static class HtmlParser
     {
-        static int globalDepth = 0;                
-        static List<String> requestedUrls = new List<string>();
-
-        internal async void WalkDoc(string html, string baseUrl, int depth)
+        public static Collection<Uri> ExtracLinks(string htmlContent, Uri baseUri, bool skipExternals, Collection<Uri> visited)
         {
-            if (String.IsNullOrEmpty(html)) return;
+            Collection<Uri> result = new Collection<Uri>();
+            if (!String.IsNullOrEmpty(htmlContent))
+            {
+                HtmlDocument doc = new HtmlDocument();
+                doc.LoadHtml(htmlContent);
 
-            HtmlDocument doc = new HtmlDocument();
-            doc.LoadHtml(html);
-            int found = 0;
-            string target = string.Empty;
-                       
-                HtmlNodeCollection links = doc.DocumentNode.SelectNodes("//a[@href]");
-                
-                foreach (HtmlNode link in links)
-                {
-                    target = FilterUrl(link.Attributes["href"].Value,baseUrl);
-                    if (target.Length > 0 && !requestedUrls.Contains(target))
-                    {
-                        found++;
-                        requestedUrls.Add(target);
-                        string html2 = await HttpClient.MakeRequest(target);
-                        while (depth > globalDepth)
-                        {
-                            globalDepth++; 
-                            new HtmlParser().WalkDoc(html2, baseUrl, depth);
-                                                       
-                        }
+                AddHrefLinks(baseUri, result, doc, skipExternals, visited);
 
-                        
-                    }                    
-                }
-                Console.WriteLine("Found {0}/{1} urls in depth {2} from {3}",
-                                        found, links.Count, globalDepth, target);
-           
+                AddScriptLinks(baseUri, result, doc, skipExternals, visited);
+
+                AddImgLinks(baseUri, result, doc, skipExternals, visited);
+
+            }
+            return result;
         }
 
-        static string FilterUrl(string u, string baseUrl)
+
+
+
+        private static void AddImgLinks(Uri baseUri, Collection<Uri> result, HtmlDocument doc, bool skipExternals, Collection<Uri> visited)
         {
-            //Console.WriteLine(u);
-            string result = string.Empty;
-            if (Uri.IsWellFormedUriString(u, UriKind.RelativeOrAbsolute))
+            HtmlNodeCollection images = doc.DocumentNode.SelectNodes("//img[@src]");
+            if (images != null)
             {
-                Uri uri = new Uri(u, UriKind.RelativeOrAbsolute);
-                if (uri.IsAbsoluteUri)
+                foreach (HtmlNode img in images)
                 {
-                    if (uri.DnsSafeHost == new Uri(baseUrl).DnsSafeHost)
+                    string href = FilterUrl(img.Attributes["src"].Value.Trim(), baseUri, skipExternals, visited);
+                    if (href.Length > 0)
                     {
-                        result = u;
+                        Uri foundUri = new Uri(href);
+                        if (!result.Contains(foundUri))
+                        {
+                            result.Add(foundUri);
+                        }
                     }
                 }
-                else
+            }
+        }
+
+        private static void AddHrefLinks(Uri baseUri, Collection<Uri> result, HtmlDocument doc, bool skipExternals, Collection<Uri> visited)
+        {
+            HtmlNodeCollection links = doc.DocumentNode.SelectNodes("//a[@href]");
+            if (links != null)
+            {
+                foreach (HtmlNode link in links)
                 {
-                    if (!u.StartsWith("/"))
+                    string href = FilterUrl(link.Attributes["href"].Value.Trim(), baseUri, skipExternals, visited);
+
+                    if (href.Length > 0)
                     {
-                        u = "/" +u;
+                        Uri foundUri = new Uri(href);
+                        if (!result.Contains(foundUri))
+                        {
+                            result.Add(foundUri);
+                        }
                     }
-                    result = new Uri(baseUrl + u).ToString();
+                }
+            }
+        }
+
+        private static void AddScriptLinks(Uri baseUri, Collection<Uri> result, HtmlDocument doc, bool skipExternals, Collection<Uri> visited)
+        {
+            HtmlNodeCollection links = doc.DocumentNode.SelectNodes("//script[@src]");
+            if (links != null)
+            {
+                foreach (HtmlNode link in links)
+                {
+                    string href = FilterUrl(link.Attributes["src"].Value.Trim(), baseUri, skipExternals,  visited);
+
+                    if (href.Length > 0)
+                    {
+                        Uri foundUri = new Uri(href);
+                        if (!result.Contains(foundUri))
+                        {
+                            result.Add(foundUri);
+                        }
+                    }
+                }
+            }
+        }
+
+
+        static private string FilterUrl(string u, Uri baseUri, bool skipExternals, Collection<Uri> visited)
+        {
+            string result = string.Empty;
+            if (!u.ToLower().Contains("javascript:") && Uri.IsWellFormedUriString(u, UriKind.RelativeOrAbsolute))
+            {
+                Uri uri = new Uri(u, UriKind.RelativeOrAbsolute);
+                if (!visited.Contains(uri))
+                {
+                    if (uri.IsAbsoluteUri && uri != baseUri)
+                    {
+                        if (!skipExternals || 
+                            uri.DnsSafeHost.ToLower() == baseUri.DnsSafeHost.ToLower())
+                        {
+                            result = u;
+                        }
+                    }
+                    else
+                    {
+                        result = new Uri(baseUri, u).ToString();
+
+                    }
                 }
             }
             return result;
