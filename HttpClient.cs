@@ -7,21 +7,28 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Windows.UI.Xaml.Controls;
+using HttpWarmUp.Uwp;
 
 namespace HttpWarmpUp
 {
     public class HttpClient
     {
-        public static CredentialCache CurrentCredentialCache { get; set; }
+        public  HttpClient(Console tb)
+        {
+            Log  = new Log(tb);
+        }
 
-        public static async void ScanUrl(Uri uri, int depth, Collection<Uri> visitedUris, bool skipExternals, bool makeTrackingRequest)
+        public  CredentialCache CurrentCredentialCache { get; set; }
+         Log Log ;
+        public  async void ScanUrl(Uri uri, int depth, Collection<Uri> visitedUris, bool skipExternals, bool makeTrackingRequest)
         {
             string pageContent = await  RequestUriToScan(null, uri, 0, makeTrackingRequest, visitedUris);
             PreCrawlUrl(uri, pageContent, 1, depth, visitedUris, skipExternals,  makeTrackingRequest);
         }
 
 
-        public static async void PreCrawlUrl(Uri pageUri, String pageContent, int currentLevel, int depth, Collection<Uri> visitedUris, bool skipExternals, bool makeTrackingRequest)
+        public  async void PreCrawlUrl(Uri pageUri, String pageContent, int currentLevel, int depth, Collection<Uri> visitedUris, bool skipExternals, bool makeTrackingRequest)
         {
             if (currentLevel <= depth)
             {
@@ -47,7 +54,7 @@ namespace HttpWarmpUp
             }
         }
 
-        public static async void CrawlUrl(Uri referrer, Uri uriToScan, int currentLevel, int depth, Collection<Uri> visitedUris, bool skipExternals, bool makeTrackingRequest)
+        public  async void CrawlUrl(Uri referrer, Uri uriToScan, int currentLevel, int depth, Collection<Uri> visitedUris, bool skipExternals, bool makeTrackingRequest)
         {
             string html = await RequestUriToScan(referrer, uriToScan, currentLevel, makeTrackingRequest, visitedUris);
 
@@ -65,28 +72,28 @@ namespace HttpWarmpUp
             }
         }
 
-        private static async Task<string> RequestUriToScan(Uri referrer, Uri uriToScan, int currentLevel, bool makeTrackingRequest, Collection<Uri> visitedUris)
+        private  async Task<string> RequestUriToScan(Uri referrer, Uri uriToScan, int currentLevel, bool makeTrackingRequest, Collection<Uri> visitedUris)
         {
             string html = string.Empty;
             if (NotIsVisitedUri(uriToScan, visitedUris))
             {
 
-                html = await HttpClient.MakeRequest((referrer!=null)?referrer.AbsoluteUri:String.Empty, uriToScan.AbsoluteUri, currentLevel, visitedUris);
+                html = await MakeRequest((referrer!=null)?referrer.AbsoluteUri:String.Empty, uriToScan.AbsoluteUri, currentLevel, visitedUris);
                 if (makeTrackingRequest && IsArticle(uriToScan))
                 {
-                    await HttpClient.MakeRequest(uriToScan.AbsoluteUri, GetTrackingUrl(uriToScan), currentLevel, visitedUris);
+                    await MakeRequest(uriToScan.AbsoluteUri, GetTrackingUrl(uriToScan), currentLevel, visitedUris);
                 }
                 RegisterVisitedUri(visitedUris, uriToScan);
             }
             return html;
         }
 
-        private static string GetTrackingUrl(Uri uriToScan)
+        private  string GetTrackingUrl(Uri uriToScan)
         {
             return uriToScan.Scheme + "://tr." + uriToScan.DnsSafeHost + "/lomascount.gif";
         }
 
-        private static bool IsArticle(Uri uriToScan)
+        private  bool IsArticle(Uri uriToScan)
         {
             string regex = @".+[/](genteycultura|mundo|espana|economia|sucesos|local)[/]\d\d\d\d[/]\d\d\d\d[/]actualidad[/].+aspx|.+[/]\d\d\d\d[/](genteycultura|mundo|espana|economia|sucesos|local)[/]\d\d\d\d[/]actualidad[/].+aspx|.+[/](especiales)[/].+[/]actualidad[/].+aspx|.+[/](videos|fotos)[/]actualidad[/]ficha.+aspx\?.+";
             RegexOptions options = (RegexOptions.IgnorePatternWhitespace | RegexOptions.IgnoreCase);
@@ -94,12 +101,12 @@ namespace HttpWarmpUp
             return reg.IsMatch(uriToScan.ToString());
         }
 
-        private static bool NotIsVisitedUri(Uri uriToScan, Collection<Uri> visitedUris)
+        private  bool NotIsVisitedUri(Uri uriToScan, Collection<Uri> visitedUris)
         {
             return !visitedUris.Contains(uriToScan);
         }
 
-        internal static async Task<string> MakeRequest(string referrer, string url, int urlLevel, Collection<Uri>visitedLinks)
+        internal  async Task<string> MakeRequest(string referrer, string url, int urlLevel, Collection<Uri>visitedLinks)
         {
             WebResponse resp = null;
             string result = string.Empty;
@@ -146,7 +153,7 @@ namespace HttpWarmpUp
             return result;
         }
 
-        private static string GetFrontEnd(WebResponse resp)
+        private  string GetFrontEnd(WebResponse resp)
         {
             string frontend = "UNK";
             if (resp != null && resp.Headers != null && resp.Headers.AllKeys.Contains<string>("f"))
@@ -164,7 +171,7 @@ namespace HttpWarmpUp
             return frontend;
         }
 
-        private static void ReportRequestError(string referrer, string url, int urlLevel, WebException wex)
+        private  void ReportRequestError(string referrer, string url, int urlLevel, WebException wex)
         {
             string statusInfo = "";
             string frontEnd = "UKN";
@@ -184,7 +191,7 @@ namespace HttpWarmpUp
                 wex.Message, referrer);
         }
 
-        private static int GetStatusCode(WebResponse resp)
+        private  int GetStatusCode(WebResponse resp)
         {
             int statusCode = -1;
             HttpWebResponse httpResp = resp as HttpWebResponse;
@@ -197,7 +204,7 @@ namespace HttpWarmpUp
             return statusCode;
         }
 
-        private static void RegisterVisitedUri(Collection<Uri> visitedLinks, Uri uri)
+        private  void RegisterVisitedUri(Collection<Uri> visitedLinks, Uri uri)
         {
             if (visitedLinks != null)
             {
@@ -208,7 +215,7 @@ namespace HttpWarmpUp
             }
         }
 
-        private static void ReportElapsedTime(string referrer, string url, int statusCode, TimeSpan taken, int urlLevel, string frontend)
+        private  void ReportElapsedTime(string referrer, string url, int statusCode, TimeSpan taken, int urlLevel, string frontend)
         {
             string urlData = new Uri(url).PathAndQuery;
             if(url.Contains("lomascount.gif"))
