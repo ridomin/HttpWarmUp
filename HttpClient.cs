@@ -14,14 +14,14 @@ namespace HttpWarmpUp
     {
         public static CredentialCache CurrentCredentialCache { get; set; }
 
-        public static async void ScanUrl(Uri uri, int depth, Collection<Uri> visitedUris, bool skipExternals, bool makeTrackingRequest)
+        public static async void ScanUrl(Uri uri, int depth, Collection<Uri> visitedUris, bool skipExternals)
         {
-            string pageContent = await  RequestUriToScan(null, uri, 0, makeTrackingRequest, visitedUris);
-            PreCrawlUrl(uri, pageContent, 1, depth, visitedUris, skipExternals,  makeTrackingRequest);
+            string pageContent = await  RequestUriToScan(null, uri, 0, visitedUris);
+            PreCrawlUrl(uri, pageContent, 1, depth, visitedUris, skipExternals);
         }
 
 
-        public static async void PreCrawlUrl(Uri pageUri, String pageContent, int currentLevel, int depth, Collection<Uri> visitedUris, bool skipExternals, bool makeTrackingRequest)
+        public static async void PreCrawlUrl(Uri pageUri, String pageContent, int currentLevel, int depth, Collection<Uri> visitedUris, bool skipExternals)
         {
             if (currentLevel <= depth)
             {
@@ -33,7 +33,7 @@ namespace HttpWarmpUp
                     Dictionary<Uri, String> pagesToScan = new Dictionary<Uri, String>();
                     foreach (Uri target in relatedLinks)
                     {
-                        string html = await RequestUriToScan(pageUri, target, currentLevel, makeTrackingRequest, visitedUris);
+                        string html = await RequestUriToScan(pageUri, target, currentLevel, visitedUris);
                         if (!pagesToScan.Keys.Contains(target) && currentLevel < depth)
                         {
                             pagesToScan.Add(target, html);
@@ -41,15 +41,15 @@ namespace HttpWarmpUp
                     }
                     foreach (Uri target in pagesToScan.Keys)
                     {
-                        PreCrawlUrl(target, pagesToScan[target], currentLevel + 1, depth, visitedUris, skipExternals, makeTrackingRequest);
+                        PreCrawlUrl(target, pagesToScan[target], currentLevel + 1, depth, visitedUris, skipExternals);
                     }
                 }
             }
         }
 
-        public static async void CrawlUrl(Uri referrer, Uri uriToScan, int currentLevel, int depth, Collection<Uri> visitedUris, bool skipExternals, bool makeTrackingRequest)
+        public static async void CrawlUrl(Uri referrer, Uri uriToScan, int currentLevel, int depth, Collection<Uri> visitedUris, bool skipExternals)
         {
-            string html = await RequestUriToScan(referrer, uriToScan, currentLevel, makeTrackingRequest, visitedUris);
+            string html = await RequestUriToScan(referrer, uriToScan, currentLevel, visitedUris);
 
             if (currentLevel < depth)
             {
@@ -60,39 +60,23 @@ namespace HttpWarmpUp
                 }
                 foreach (Uri candidateUri in uris)
                 {
-                    CrawlUrl(uriToScan, candidateUri, currentLevel + 1, depth, visitedUris, makeTrackingRequest, skipExternals);
+                    CrawlUrl(uriToScan, candidateUri, currentLevel + 1, depth, visitedUris, skipExternals);
                 }
             }
         }
 
-        private static async Task<string> RequestUriToScan(Uri referrer, Uri uriToScan, int currentLevel, bool makeTrackingRequest, Collection<Uri> visitedUris)
+        private static async Task<string> RequestUriToScan(Uri referrer, Uri uriToScan, int currentLevel, Collection<Uri> visitedUris)
         {
             string html = string.Empty;
             if (NotIsVisitedUri(uriToScan, visitedUris))
             {
 
                 html = await HttpClient.MakeRequest((referrer!=null)?referrer.AbsoluteUri:String.Empty, uriToScan.AbsoluteUri, currentLevel, visitedUris);
-                if (makeTrackingRequest && IsArticle(uriToScan))
-                {
-                    await HttpClient.MakeRequest(uriToScan.AbsoluteUri, GetTrackingUrl(uriToScan), currentLevel, visitedUris);
-                }
                 RegisterVisitedUri(visitedUris, uriToScan);
             }
             return html;
         }
 
-        private static string GetTrackingUrl(Uri uriToScan)
-        {
-            return uriToScan.Scheme + "://tr." + uriToScan.DnsSafeHost + "/lomascount.gif";
-        }
-
-        private static bool IsArticle(Uri uriToScan)
-        {
-            string regex = @".+[/](genteycultura|mundo|espana|economia|sucesos|local)[/]\d\d\d\d[/]\d\d\d\d[/]actualidad[/].+aspx|.+[/]\d\d\d\d[/](genteycultura|mundo|espana|economia|sucesos|local)[/]\d\d\d\d[/]actualidad[/].+aspx|.+[/](especiales)[/].+[/]actualidad[/].+aspx|.+[/](videos|fotos)[/]actualidad[/]ficha.+aspx\?.+";
-            RegexOptions options = (RegexOptions.IgnorePatternWhitespace | RegexOptions.IgnoreCase);
-            Regex reg = new Regex(regex, options);
-            return reg.IsMatch(uriToScan.ToString());
-        }
 
         private static bool NotIsVisitedUri(Uri uriToScan, Collection<Uri> visitedUris)
         {
@@ -129,8 +113,7 @@ namespace HttpWarmpUp
                             result = sr.ReadToEnd();
                             requestWatch.Stop();
                             int statusCode = GetStatusCode(resp);
-                            string frontend = GetFrontEnd(resp);
-                            ReportElapsedTime(referrer, url, statusCode, requestWatch.Elapsed, urlLevel, frontend);
+                            ReportElapsedTime(referrer, url, statusCode, requestWatch.Elapsed, urlLevel);
                         }
                     }
                 }
@@ -146,41 +129,22 @@ namespace HttpWarmpUp
             return result;
         }
 
-        private static string GetFrontEnd(WebResponse resp)
-        {
-            string frontend = "UNK";
-            if (resp != null && resp.Headers != null && resp.Headers.AllKeys.Contains<string>("f"))
-            {
-                frontend = resp.Headers["f"];
-            }
-            if (resp != null && resp.Headers != null && resp.Headers.AllKeys.Contains<string>("Server") && resp.Headers["Server"].StartsWith("NetCache"))
-            {
-                frontend = "NTC";
-            }
-            if (frontend == "UNK" && resp != null && resp.Headers != null && resp.Headers.AllKeys.Contains<string>("Server"))
-            {
-                frontend = resp.Headers["Server"];
-            }
-            return frontend;
-        }
-
         private static void ReportRequestError(string referrer, string url, int urlLevel, WebException wex)
         {
             string statusInfo = "";
-            string frontEnd = "UKN";
             HttpWebResponse httpResp = wex.Response as HttpWebResponse;
             if (httpResp != null)
             {
                 statusInfo = ((int)httpResp.StatusCode).ToString();
-                frontEnd = GetFrontEnd(httpResp);
+
             }
             else
             {
                 statusInfo = wex.Status.ToString();
             }
 
-            Log.WriteTabbedError(urlLevel, "ERROR".PadLeft(16, ' ') + "\t[{0},{1}]\t{2}\t{3}\tReferrer: {4}",
-                frontEnd, statusInfo, url,
+            Log.WriteTabbedError(urlLevel, "ERROR".PadLeft(16, ' ') + "\t[{0},{1}]\t{2}\tReferrer: {3}",
+                statusInfo, url,
                 wex.Message, referrer);
         }
 
@@ -208,24 +172,20 @@ namespace HttpWarmpUp
             }
         }
 
-        private static void ReportElapsedTime(string referrer, string url, int statusCode, TimeSpan taken, int urlLevel, string frontend)
+        private static void ReportElapsedTime(string referrer, string url, int statusCode, TimeSpan taken, int urlLevel)
         {
             string urlData = new Uri(url).PathAndQuery;
-            if(url.Contains("lomascount.gif"))
-            {
-                urlData = "Tracking for URL:" + new Uri(referrer).PathAndQuery; ;
-            }
             if (taken.Seconds > 5) //Settings.Default.WarnTimeTakenInSeconds)
             {
-                Log.WriteTabbedWarning(urlLevel, "{0}\t[{1},{2}]\t{3}",
-                taken.ToString(), frontend.PadLeft(3), statusCode,
-                urlData);
+                Log.WriteTabbedWarning(urlLevel, "{0}\t[{1},{2}]",
+                    taken.ToString(), statusCode,
+                    urlData);
             }
             else
             {
-                Log.WriteTabbedInfo(urlLevel, "{0}\t[{1},{2}]\t{3}",
-                taken.ToString(), frontend.PadLeft(3), statusCode,
-                urlData);
+                Log.WriteTabbedInfo(urlLevel, "{0}\t[{1},{2}]",
+                    taken.ToString(), statusCode,
+                    urlData);
             }
         }
     }

@@ -16,10 +16,7 @@ namespace HttpWarmpUp
         void Run(string[] args)
         {
             string urlToScan = string.Empty;
-            int depthLevel = 2;
-            int repeatCount = 1;
-            bool makeTracking = true;
-            bool skipExternal = true;
+            int depthLevel = 2;            bool skipExternal = true;
             string skipUrlsContaining = String.Empty;
 
             try
@@ -28,9 +25,7 @@ namespace HttpWarmpUp
                 {
                     urlToScan = args[0];
                     depthLevel = Convert.ToInt32(args[1]);
-                    repeatCount = 1; //Int32.Parse(args[2]);
                     skipExternal = Boolean.Parse(args[2]);
-                    makeTracking = false; //Boolean.Parse(args[4]);
                     
                 }
                 else 
@@ -40,25 +35,20 @@ namespace HttpWarmpUp
                 }
 
 
-                Log.WriteTabbedInfo(0, "Repeat Count:{1}. Depth:{2}. Skip External Links:{3}. Make Tracking Requests:{4}", urlToScan, repeatCount, depthLevel, skipExternal.ToString(), makeTracking.ToString());
+                Log.WriteTabbedInfo(0, "Depth:{0}. Skip External Links:{1}", 
+                 depthLevel, skipExternal.ToString());
 
+                Stopwatch counter = Stopwatch.StartNew();
 
-                for (int i = 0; i < repeatCount; i++)
-                {
-                    Stopwatch counter = Stopwatch.StartNew();
+                Collection<Uri> visitedUris = new Collection<Uri>();
 
-                    Log.WriteTabbedInfo(0, ">>>>>>>> Round {0}", i + 1);
-                    Collection<Uri> visitedUris = new Collection<Uri>();
+                //HttpClient.CurrentCredentialCache = GetCredentialCache(urlToScan); ;
 
-                    //HttpClient.CurrentCredentialCache = GetCredentialCache(urlToScan); ;
-
-                    //HttpClient.CrawlUrl(null, new Uri(urlToScan), 0, depthLevel, visitedUris, skipExternal);
-                    HttpClient.ScanUrl(new Uri(urlToScan), depthLevel, visitedUris, skipExternal, makeTracking);
-                    counter.Stop();
-                    Log.WriteTabbedInfo(0, ">>>>>>>> Round {0} Total Time:{1} Visited Links:{2}", i + 1, counter.Elapsed, visitedUris.Count);
-                    Log.WriteTabbedInfo(0, "");
-                    Console.ReadLine();
-                }
+                //HttpClient.CrawlUrl(null, new Uri(urlToScan), 0, depthLevel, visitedUris, skipExternal);
+                HttpClient.ScanUrl(new Uri(urlToScan), depthLevel, visitedUris, skipExternal);
+                counter.Stop();
+                Console.ReadLine();
+            
             }
             catch (Exception ex)
             {
