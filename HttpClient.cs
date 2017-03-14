@@ -5,7 +5,6 @@ using System.Net;
 using System.IO;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace HttpWarmpUp
@@ -47,24 +46,7 @@ namespace HttpWarmpUp
             }
         }
 
-        public static async void CrawlUrl(Uri referrer, Uri uriToScan, int currentLevel, int depth, Collection<Uri> visitedUris, bool skipExternals)
-        {
-            string html = await RequestUriToScan(referrer, uriToScan, currentLevel, visitedUris);
-
-            if (currentLevel < depth)
-            {
-                Collection<Uri> uris = HtmlParser.ExtracLinks(html, uriToScan, skipExternals, visitedUris);
-                if (uris.Count > 0)
-                {
-                    Log.WriteTabbedInfo(currentLevel, "Current Level: {0}, Dependant Links: {1}", currentLevel + 1, uris.Count);
-                }
-                foreach (Uri candidateUri in uris)
-                {
-                    CrawlUrl(uriToScan, candidateUri, currentLevel + 1, depth, visitedUris, skipExternals);
-                }
-            }
-        }
-
+      
         private static async Task<string> RequestUriToScan(Uri referrer, Uri uriToScan, int currentLevel, Collection<Uri> visitedUris)
         {
             string html = string.Empty;

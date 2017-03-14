@@ -10,7 +10,9 @@ namespace HttpWarmpUp
 
         static void Main(string[] args)
         {
-            new Program().Run(args);
+           // new Program().Run(args);
+           new Crawler(args[0]).ScanUrl().Wait();
+           
         }
 
         void Run(string[] args)
