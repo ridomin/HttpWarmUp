@@ -38,15 +38,13 @@ namespace HttpWarmpUp
                 Log.WriteTabbedInfo(0, "Depth:{0}. Skip External Links:{1}", 
                  depthLevel, skipExternal.ToString());
 
-                Stopwatch counter = Stopwatch.StartNew();
-
                 Collection<Uri> visitedUris = new Collection<Uri>();
 
-                //HttpClient.CurrentCredentialCache = GetCredentialCache(urlToScan); ;
-
-                //HttpClient.CrawlUrl(null, new Uri(urlToScan), 0, depthLevel, visitedUris, skipExternal);
+                Stopwatch counter = Stopwatch.StartNew();
                 HttpClient.ScanUrl(new Uri(urlToScan), depthLevel, visitedUris, skipExternal);
                 counter.Stop();
+                
+                Console.WriteLine("Finished in " + counter.ElapsedMilliseconds);
                 Console.ReadLine();
             
             }

@@ -95,13 +95,6 @@ namespace HttpWarmpUp
 
                 //req.Timeout = Settings.Default.TimeOutInSeconds * 1000;
 
-                HttpWebRequest httpReq = req as HttpWebRequest;
-                if (httpReq != null)
-                {
-                    //httpReq.UserAgent = String.Format("Terra.HttpWarmUp/1.0 ({0}) From {1}", "core", System.Environment.MachineName);
-                    //httpReq.Referer = referrer;
-                }
-
                 Stopwatch requestWatch = Stopwatch.StartNew();
                 using (resp = await req.GetResponseAsync())
                 {

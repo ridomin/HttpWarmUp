@@ -16,9 +16,9 @@ namespace HttpWarmpUp
 
                 AddHrefLinks(baseUri, result, doc, skipExternals, visited);
 
-                AddScriptLinks(baseUri, result, doc, skipExternals, visited);
+                //AddScriptLinks(baseUri, result, doc, skipExternals, visited);
 
-                AddImgLinks(baseUri, result, doc, skipExternals, visited);
+                //AddImgLinks(baseUri, result, doc, skipExternals, visited);
 
             }
             return result;
